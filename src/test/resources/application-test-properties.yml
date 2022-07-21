@@ -1,0 +1,4 @@
+rarible:
+  x2y2:
+    apiUrl: "http://localhos:9999"
+    apiKey: "test-api-key"

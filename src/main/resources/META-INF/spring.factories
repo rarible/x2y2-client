@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  com.rarible.x2y2.starter.X2Y2ClientAutoconfiguration
