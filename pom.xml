@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <parent>
+        <groupId>com.rarible</groupId>
+        <artifactId>rarible-parent-pom</artifactId>
+        <version>2.0.3</version>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>rarible-x2y2-client-parent</artifactId>
+    <name>rarible-x2y2-client-parent</name>
+
+    <groupId>com.rarible.x2y2</groupId>
+    <version>${revision}</version>
+    <packaging>pom</packaging>
+
+    <url>https://rarible.com</url>
+    <description>Web client to get orders/offers and events from x2y2 API</description>
+    <scm>
+        <url>https://github.com/rarible/x2y2-client</url>
+        <connection>scm:git:git@github.com:rarible/x2y2-client.git</connection>
+        <developerConnection>scm:git:git@github.com:rarible/x2y2-client.git</developerConnection>
+    </scm>
+
+    <developers>
+        <developer>
+            <name>Rarible protocol</name>
+            <url>https://rarible.com</url>
+        </developer>
+    </developers>
+
+    <licenses>
+        <license>
+            <name>MIT</name>
+            <url>https://github.com/rarible/x2y2-client/blob/main/LICENSE.md</url>
+        </license>
+    </licenses>
+
+
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <kotlin.code.style>official</kotlin.code.style>
+        <kotlin.compiler.jvmTarget>1.8</kotlin.compiler.jvmTarget>
+        <okhttp.version>4.10.0</okhttp.version>
+        <scaleteher.version>0.1.3</scaleteher.version>
+        <revision>1.0.1</revision>
+    </properties>
+
+
+
+    <repositories>
+        <repository>
+            <id>nexus-ext-maven-public</id>
+            <name>nexus-ext-maven-public</name>
+            <url>https://repo.rarible.org/repository/maven-public/</url>
+        </repository>
+    </repositories>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>nexus-snapshots</id>
+            <url>http://nexus-ext.rarible.int/repository/maven-snapshots/</url>
+        </snapshotRepository>
+        <repository>
+            <id>nexus-releases</id>
+            <url>http://nexus-ext.rarible.int/repository/maven-releases/</url>
+        </repository>
+    </distributionManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>se.bjurr.gitchangelog</groupId>
+                <artifactId>git-changelog-maven-plugin</artifactId>
+                <inherited>false</inherited>
+                <configuration>
+                    <extendedVariables>
+                        <repository>https://github.com/rarible/x2y2-client</repository>
+                    </extendedVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+
+
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib-jdk8</artifactId>
+        </dependency>
+    </dependencies>
+
+    <modules>
+        <module>client</module>
+        <module>starter</module>
+    </modules>
+</project>
