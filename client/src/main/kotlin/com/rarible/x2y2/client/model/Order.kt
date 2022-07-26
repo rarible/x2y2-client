@@ -20,7 +20,7 @@ data class Order(
     val endAt: Instant,
     val isBundle: Boolean,
     val side: Int,
-    val status: String,
+    val status: OrderStatus,
     val token: Token?,
     val updatedAt: Instant
 )
