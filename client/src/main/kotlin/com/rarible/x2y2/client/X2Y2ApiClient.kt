@@ -19,15 +19,15 @@ import com.rarible.x2y2.client.model.SortDirection
 import java.math.BigInteger
 import java.net.URI
 import java.time.Instant
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import org.springframework.web.util.UriBuilder
 import scalether.domain.Address
 
-@Component
-class X2Y2WebClient(
-    @Suppress("SpringJavaInjectionPointsAutowiringInspection")
+class X2Y2ApiClient(
+    @Qualifier("x2y2WebClient")
     private val webClient: WebClient
 ) {
 

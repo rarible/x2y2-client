@@ -1,6 +1,6 @@
 package com.rarible.x2y2.starter
 
-import com.rarible.x2y2.client.X2Y2WebClient
+import com.rarible.x2y2.client.X2Y2ApiClient
 import com.rarible.x2y2.client.model.ApiListResponse
 import com.rarible.x2y2.client.model.Contract
 import com.rarible.x2y2.client.model.ContractStats
@@ -41,7 +41,7 @@ class X2Y2ClientTest {
     private lateinit var mockBackend: MockWebServer
 
     @Autowired
-    private lateinit var client: X2Y2WebClient
+    private lateinit var client: X2Y2ApiClient
 
     private val orders: ClassPathResource = ClassPathResource("json/orders.json")
 

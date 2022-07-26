@@ -12,4 +12,5 @@ private val DEFAULT_API_URI = URI.create("https://api.x2y2.org")
 data class X2Y2ClientProperties(
     val apiUrl: URI = DEFAULT_API_URI,
     val apiKey: String,
+    val proxy: URI? = null
 )
