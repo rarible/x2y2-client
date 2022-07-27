@@ -8,7 +8,7 @@ import scalether.domain.Address
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class Order(
-    val id: Int,
+    val id: BigInteger,
     val maker: Address,
     val currency: Address,
     val taker: Address?,
