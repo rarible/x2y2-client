@@ -19,6 +19,8 @@ data class ApiSingleResponse<out T>(
 
 const val ORDERS_MAX_LIMIT = 50
 const val EVENTS_MAX_LIMIT = 200
+const val ORDERS_GET_CANCEL_INPUT_ENDPOINT = "api/orders/cancel"
+const val ORDERS_SIGN_ENDPOINT = "api/orders/sign"
 const val ORDERS_ENDPOINT = "/v1/orders"
 const val EVENTS_ENDPOINT = "/v1/events"
 const val OFFERS_ENDPOINT = "/v1/offers"

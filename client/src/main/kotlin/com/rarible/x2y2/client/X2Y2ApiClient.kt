@@ -13,14 +13,20 @@ import com.rarible.x2y2.client.model.EventType
 import com.rarible.x2y2.client.model.OFFERS_ENDPOINT
 import com.rarible.x2y2.client.model.ORDERS_ENDPOINT
 import com.rarible.x2y2.client.model.ORDERS_MAX_LIMIT
+import com.rarible.x2y2.client.model.ORDERS_SIGN_ENDPOINT
 import com.rarible.x2y2.client.model.Order
+import com.rarible.x2y2.client.model.FetchOrderSignRequest
+import com.rarible.x2y2.client.model.FetchOrderSignResponse
+import com.rarible.x2y2.client.model.GetCancelInputRequest
+import com.rarible.x2y2.client.model.GetCancelInputResponse
+import com.rarible.x2y2.client.model.ORDERS_GET_CANCEL_INPUT_ENDPOINT
 import com.rarible.x2y2.client.model.OrdersSort
 import com.rarible.x2y2.client.model.SortDirection
 import java.math.BigInteger
 import java.net.URI
 import java.time.Instant
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.stereotype.Component
+import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import org.springframework.web.util.UriBuilder
@@ -178,6 +184,72 @@ class X2Y2ApiClient(
      */
     suspend fun contract(contract: String): ApiSingleResponse<Contract> {
         return webClient.get().uri(CONTRACTS_ENDPOINT, mapOf("contract" to contract)).retrieve().awaitBody()
+    }
+
+    /**
+     * Fetch order sign
+     */
+    suspend fun fetchOrderSign(
+        caller: String,
+        op: BigInteger,
+        orderId: BigInteger,
+        currency: Address,
+        price: BigInteger,
+        tokenId: BigInteger?
+    ): ApiListResponse<FetchOrderSignResponse> {
+
+        return webClient.post()
+            .uri(ORDERS_SIGN_ENDPOINT)
+            .body(
+                BodyInserters.fromValue(
+                    FetchOrderSignRequest(
+                        caller = caller,
+                        op = op,
+                        items = listOf(
+                            FetchOrderSignRequest.Item(
+                                orderId = orderId,
+                                currency = currency,
+                                price = price,
+                                tokenId = tokenId
+                            )
+                        )
+                    )
+                )
+            )
+            .retrieve()
+            .awaitBody()
+    }
+
+    /**
+     * Get cancel input
+     */
+    suspend fun getCancelInput(
+        caller: String,
+        op: BigInteger,
+        orderId: BigInteger,
+        signMessage: String,
+        sign: String
+    ): ApiListResponse<GetCancelInputResponse> {
+
+        return webClient.post()
+            .uri(ORDERS_GET_CANCEL_INPUT_ENDPOINT)
+            .body(
+                BodyInserters.fromValue(
+                    GetCancelInputRequest(
+                        caller = caller,
+                        op = op,
+                        items = listOf(
+                            GetCancelInputRequest.Item(
+                                orderId = orderId
+                            )
+                        ),
+                        sign = sign,
+                        signMessage = signMessage
+                    )
+                )
+            )
+            .retrieve()
+            .awaitBody()
     }
 
     /**
