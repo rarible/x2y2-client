@@ -24,6 +24,7 @@ data class Order(
     val isBundle: Boolean,
     val side: Int,
     val status: OrderStatus,
+    val amount: BigInteger,
     val token: Token?,
     val updatedAt: Instant
 )
