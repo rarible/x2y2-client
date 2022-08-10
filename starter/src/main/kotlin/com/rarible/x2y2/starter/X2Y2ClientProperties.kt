@@ -10,6 +10,6 @@ internal const val RARIBLE_X2Y2 = "rarible.x2y2"
 @ConfigurationProperties(RARIBLE_X2Y2)
 data class X2Y2ClientProperties(
     val endpoint: URI?,
-    val apiKey: String,
+    val apiKey: String?,
     val proxy: URI?,
 )

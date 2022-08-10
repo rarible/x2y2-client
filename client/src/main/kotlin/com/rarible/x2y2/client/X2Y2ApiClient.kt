@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit
 
 class X2Y2ApiClient(
     endpoint: URI,
-    apiKey: String,
+    apiKey: String?,
     proxy: URI?
 ) {
     private val transport = initTransport(endpoint, proxy, apiKey)
@@ -305,7 +305,7 @@ class X2Y2ApiClient(
         return builder.build()
     }
 
-    private fun initTransport(endpoint: URI, proxy: URI?, apiKey: String): WebClient {
+    private fun initTransport(endpoint: URI, proxy: URI?, apiKey: String?): WebClient {
         val mapper = ObjectMapper().apply {
             registerModule(KotlinModule())
             registerModule(JavaTimeModule())
@@ -324,7 +324,7 @@ class X2Y2ApiClient(
                     .build()
             )
             baseUrl(endpoint.toASCIIString())
-            defaultHeader("X-API-KEY", apiKey)
+            apiKey?.let { defaultHeader("X-API-KEY", it) }
             defaultHeader("Content-Type", "application/json")
             build()
         }
