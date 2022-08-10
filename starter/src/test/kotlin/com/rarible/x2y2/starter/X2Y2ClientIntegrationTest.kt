@@ -5,37 +5,36 @@ import com.rarible.x2y2.client.model.Event
 import com.rarible.x2y2.client.model.EventType
 import com.rarible.x2y2.client.model.Order
 import kotlinx.coroutines.runBlocking
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.SpringBootConfiguration
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import scalether.domain.Address
 import java.math.BigInteger
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
- * To run this test put real x2y2 api key to env variable with name RARIBLE_X2Y2_API_KEY
+ * To run this test put real x2y2 api key to application-local.yml
  */
-@SpringBootTest(
-    classes = [X2Y2ClientAutoconfiguration::class]
-)
-@ActiveProfiles("test")
-@Import(TestConfiguration::class)
-@EnabledIfEnvironmentVariable(
-    named = "RARIBLE_X2Y2_API_KEY",
-    matches = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\$"
-)
+@SpringBootTest
+@SpringBootConfiguration
+@EnableAutoConfiguration
+@ActiveProfiles("local")
 class X2Y2ClientIntegrationTest {
 
     @Autowired
     private lateinit var client: X2Y2ApiClient
 
     @Test
+    fun `test default client initialized`() {
+        assertThat(client).isNotNull
+    }
+
+    @Test
+    @Disabled
     internal fun `should read order with paging`() {
         val expectedCount = 200
         runBlocking {
@@ -49,11 +48,10 @@ class X2Y2ClientIntegrationTest {
 
             assertThat(orders.size).isEqualTo(expectedCount)
         }
-
-
     }
 
     @Test
+    @Disabled
     internal fun `should read events with paging`() {
         runBlocking {
             val expectedCount = 800
@@ -70,13 +68,13 @@ class X2Y2ClientIntegrationTest {
     }
 
     @Test
-    internal fun `should sign order`() = runBlocking {
+    @Disabled
+    internal fun `should sign order`() = runBlocking<Unit> {
         val orders = client.orders(
             contract = Address.apply("0x259bF444f0bFE8Af20b6097cf8D32A85526B03a4"),
             tokenId = BigInteger.valueOf(999)
         )
-
-        assertTrue(orders.data.isNotEmpty())
+        assertThat(orders.data.isNotEmpty()).isTrue
 
         val order = orders.data.first()
         val response = client.fetchOrderSign(
@@ -87,7 +85,6 @@ class X2Y2ClientIntegrationTest {
             order.price,
             order.token?.tokenId
         )
-
-        assertEquals(1, response.data.size)
+        assertThat(response.data).hasSize(1)
     }
 }

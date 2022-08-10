@@ -27,26 +27,36 @@ import com.rarible.x2y2.client.model.GetCancelInputResponse
 import com.rarible.x2y2.client.model.ORDERS_GET_CANCEL_INPUT_ENDPOINT
 import com.rarible.x2y2.client.model.OrdersSort
 import com.rarible.x2y2.client.model.SortDirection
+import io.netty.channel.ChannelOption
+import io.netty.channel.epoll.EpollChannelOption
+import io.netty.handler.timeout.ReadTimeoutHandler
+import io.netty.handler.timeout.WriteTimeoutHandler
+import org.springframework.http.client.reactive.ClientHttpConnector
+import org.springframework.http.client.reactive.ReactorClientHttpConnector
+import org.springframework.http.codec.json.Jackson2JsonDecoder
+import org.springframework.http.codec.json.Jackson2JsonEncoder
+import org.springframework.util.unit.DataSize
+import org.springframework.web.reactive.function.BodyInserters
+import org.springframework.web.reactive.function.client.ExchangeStrategies
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.awaitBody
+import org.springframework.web.util.UriBuilder
+import reactor.netty.resources.ConnectionProvider
+import reactor.netty.transport.ProxyProvider
+import reactor.netty.http.client.HttpClient
 import java.math.BigInteger
 import java.net.URI
 import java.time.Instant
 import scalether.domain.Address
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 class X2Y2ApiClient(
     endpoint: URI,
-    apiKey: String?,
-    proxy: URI?,
-    logRawJson: Boolean = false
+    apiKey: String,
+    proxy: URI?
 ) {
-    private val mapper = ObjectMapper().apply {
-        registerModule(KotlinModule())
-        registerModule(JavaTimeModule())
-        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-        setSerializationInclusion(JsonInclude.Include.NON_NULL)
-    }
-
-    protected val transport = initTransport(endpoint, proxy)
+    private val transport = initTransport(endpoint, proxy, apiKey)
 
     /**
      * Fetch open orders
@@ -79,7 +89,7 @@ class X2Y2ApiClient(
             throw IllegalArgumentException("Contract and token ID must be both defined or both undefined!")
         }
 
-        return webClient.get().uri(ORDERS_ENDPOINT) { builder ->
+        return transport.get().uri(ORDERS_ENDPOINT) { builder ->
             makeOrdersUrl(
                 maker,
                 builder,
@@ -129,7 +139,7 @@ class X2Y2ApiClient(
             throw IllegalArgumentException("Contract must be defined if token ID is defined!")
         }
 
-        return webClient.get().uri(OFFERS_ENDPOINT) { builder ->
+        return transport.get().uri(OFFERS_ENDPOINT) { builder ->
             makeOrdersUrl(
                 maker,
                 builder,
@@ -170,8 +180,7 @@ class X2Y2ApiClient(
         limit: Int = EVENTS_MAX_LIMIT,
         cursor: String? = null
     ): ApiListResponse<Event> {
-        return webClient.get().uri(EVENTS_ENDPOINT) { builder ->
-
+        return transport.get().uri(EVENTS_ENDPOINT) { builder ->
             builder.queryParam("type", type.value)
             if (contract != null && tokenId != null) {
                 builder.queryParam("contract", contract)
@@ -194,7 +203,7 @@ class X2Y2ApiClient(
      * @param contract Filter by contract address
      */
     suspend fun contract(contract: String): ApiSingleResponse<Contract> {
-        return webClient.get().uri(CONTRACTS_ENDPOINT, mapOf("contract" to contract)).retrieve().awaitBody()
+        return transport.get().uri(CONTRACTS_ENDPOINT, mapOf("contract" to contract)).retrieve().awaitBody()
     }
 
     /**
@@ -209,7 +218,7 @@ class X2Y2ApiClient(
         tokenId: BigInteger?
     ): ApiListResponse<FetchOrderSignResponse> {
 
-        return webClient.post()
+        return transport.post()
             .uri(ORDERS_SIGN_ENDPOINT)
             .body(
                 BodyInserters.fromValue(
@@ -241,8 +250,7 @@ class X2Y2ApiClient(
         signMessage: String,
         sign: String
     ): ApiListResponse<GetCancelInputResponse> {
-
-        return webClient.post()
+        return transport.post()
             .uri(ORDERS_GET_CANCEL_INPUT_ENDPOINT)
             .body(
                 BodyInserters.fromValue(
@@ -267,7 +275,7 @@ class X2Y2ApiClient(
      * Fetch contract stats
      */
     suspend fun contractStats(contract: String): ApiSingleResponse<ContractStats> {
-        return webClient.get().uri(CONTRACTS_STATS_ENDPOINT, mapOf("contract" to contract)).retrieve().awaitBody()
+        return transport.get().uri(CONTRACTS_STATS_ENDPOINT, mapOf("contract" to contract)).retrieve().awaitBody()
     }
 
     private fun makeOrdersUrl(
@@ -297,21 +305,33 @@ class X2Y2ApiClient(
         return builder.build()
     }
 
-    private fun initTransport(endpoint: URI, proxy: URI?): WebClient {
+    private fun initTransport(endpoint: URI, proxy: URI?, apiKey: String): WebClient {
+        val mapper = ObjectMapper().apply {
+            registerModule(KotlinModule())
+            registerModule(JavaTimeModule())
+            configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            setSerializationInclusion(JsonInclude.Include.NON_NULL)
+        }
         return WebClient.builder().run {
             clientConnector(clientConnector(proxy))
             exchangeStrategies(
                 ExchangeStrategies.builder()
-                    .codecs { it.defaultCodecs().maxInMemorySize(DEFAULT_MAX_BODY_SIZE) }
+                    .codecs {
+                        it.defaultCodecs().jackson2JsonDecoder(Jackson2JsonDecoder(mapper))
+                        it.defaultCodecs().jackson2JsonEncoder(Jackson2JsonEncoder(mapper))
+                        it.defaultCodecs().maxInMemorySize(DEFAULT_MAX_BODY_SIZE)
+                    }
                     .build()
             )
             baseUrl(endpoint.toASCIIString())
+            defaultHeader("X-API-KEY", apiKey)
+            defaultHeader("Content-Type", "application/json")
             build()
         }
     }
 
     private fun clientConnector(proxy: URI?): ClientHttpConnector {
-        val provider = ConnectionProvider.builder("open-sea-connection-provider")
+        val provider = ConnectionProvider.builder("x2y2-connection-provider")
             .maxConnections(50)
             .pendingAcquireMaxCount(-1)
             .maxIdleTime(DEFAULT_TIMEOUT)
@@ -343,4 +363,9 @@ class X2Y2ApiClient(
         return ReactorClientHttpConnector(finalClient)
     }
 
+    private companion object {
+        val DEFAULT_MAX_BODY_SIZE = DataSize.ofMegabytes(10).toBytes().toInt()
+        val DEFAULT_TIMEOUT: Duration = Duration.ofSeconds(60)
+        val DEFAULT_TIMEOUT_MILLIS: Long = DEFAULT_TIMEOUT.toMillis()
+    }
 }
