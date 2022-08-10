@@ -1,5 +1,10 @@
 package com.rarible.x2y2.client
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.rarible.x2y2.client.model.ApiListResponse
 import com.rarible.x2y2.client.model.ApiSingleResponse
 import com.rarible.x2y2.client.model.CONTRACTS_ENDPOINT
@@ -25,17 +30,23 @@ import com.rarible.x2y2.client.model.SortDirection
 import java.math.BigInteger
 import java.net.URI
 import java.time.Instant
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.web.reactive.function.BodyInserters
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.awaitBody
-import org.springframework.web.util.UriBuilder
 import scalether.domain.Address
+import java.util.concurrent.TimeUnit
 
 class X2Y2ApiClient(
-    @Qualifier("x2y2WebClient")
-    private val webClient: WebClient
+    endpoint: URI,
+    apiKey: String?,
+    proxy: URI?,
+    logRawJson: Boolean = false
 ) {
+    private val mapper = ObjectMapper().apply {
+        registerModule(KotlinModule())
+        registerModule(JavaTimeModule())
+        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        setSerializationInclusion(JsonInclude.Include.NON_NULL)
+    }
+
+    protected val transport = initTransport(endpoint, proxy)
 
     /**
      * Fetch open orders
@@ -286,5 +297,50 @@ class X2Y2ApiClient(
         return builder.build()
     }
 
+    private fun initTransport(endpoint: URI, proxy: URI?): WebClient {
+        return WebClient.builder().run {
+            clientConnector(clientConnector(proxy))
+            exchangeStrategies(
+                ExchangeStrategies.builder()
+                    .codecs { it.defaultCodecs().maxInMemorySize(DEFAULT_MAX_BODY_SIZE) }
+                    .build()
+            )
+            baseUrl(endpoint.toASCIIString())
+            build()
+        }
+    }
+
+    private fun clientConnector(proxy: URI?): ClientHttpConnector {
+        val provider = ConnectionProvider.builder("open-sea-connection-provider")
+            .maxConnections(50)
+            .pendingAcquireMaxCount(-1)
+            .maxIdleTime(DEFAULT_TIMEOUT)
+            .maxLifeTime(DEFAULT_TIMEOUT)
+            .lifo()
+            .build()
+
+        val client = HttpClient.create(provider)
+            .option(ChannelOption.SO_KEEPALIVE, true)
+            .option(EpollChannelOption.TCP_KEEPIDLE, 300)
+            .option(EpollChannelOption.TCP_KEEPINTVL, 60)
+            .option(EpollChannelOption.TCP_KEEPCNT, 8)
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, DEFAULT_TIMEOUT_MILLIS.toInt())
+            .doOnConnected { connection ->
+                connection.addHandlerLast(ReadTimeoutHandler(DEFAULT_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+                connection.addHandlerLast(WriteTimeoutHandler(DEFAULT_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+            }
+            .responseTimeout(DEFAULT_TIMEOUT)
+
+        val finalClient = if (proxy != null) {
+            client
+                .proxy { option ->
+                    val userInfo = proxy.userInfo.split(":")
+                    option.type(ProxyProvider.Proxy.HTTP).host(proxy.host).username(userInfo[0]).password { userInfo[1] }.port(proxy.port)
+                }
+        } else {
+            client
+        }
+        return ReactorClientHttpConnector(finalClient)
+    }
 
 }
