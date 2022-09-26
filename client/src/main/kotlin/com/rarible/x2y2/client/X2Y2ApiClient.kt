@@ -15,16 +15,16 @@ import com.rarible.x2y2.client.model.EVENTS_ENDPOINT
 import com.rarible.x2y2.client.model.EVENTS_MAX_LIMIT
 import com.rarible.x2y2.client.model.Event
 import com.rarible.x2y2.client.model.EventType
-import com.rarible.x2y2.client.model.OFFERS_ENDPOINT
-import com.rarible.x2y2.client.model.ORDERS_ENDPOINT
-import com.rarible.x2y2.client.model.ORDERS_MAX_LIMIT
-import com.rarible.x2y2.client.model.ORDERS_SIGN_ENDPOINT
-import com.rarible.x2y2.client.model.Order
 import com.rarible.x2y2.client.model.FetchOrderSignRequest
 import com.rarible.x2y2.client.model.FetchOrderSignResponse
 import com.rarible.x2y2.client.model.GetCancelInputRequest
 import com.rarible.x2y2.client.model.GetCancelInputResponse
+import com.rarible.x2y2.client.model.OFFERS_ENDPOINT
+import com.rarible.x2y2.client.model.ORDERS_ENDPOINT
 import com.rarible.x2y2.client.model.ORDERS_GET_CANCEL_INPUT_ENDPOINT
+import com.rarible.x2y2.client.model.ORDERS_MAX_LIMIT
+import com.rarible.x2y2.client.model.ORDERS_SIGN_ENDPOINT
+import com.rarible.x2y2.client.model.Order
 import com.rarible.x2y2.client.model.OrdersSort
 import com.rarible.x2y2.client.model.SortDirection
 import io.netty.channel.ChannelOption
@@ -41,14 +41,14 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import org.springframework.web.util.UriBuilder
+import reactor.netty.http.client.HttpClient
 import reactor.netty.resources.ConnectionProvider
 import reactor.netty.transport.ProxyProvider
-import reactor.netty.http.client.HttpClient
+import scalether.domain.Address
 import java.math.BigInteger
 import java.net.URI
-import java.time.Instant
-import scalether.domain.Address
 import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 class X2Y2ApiClient(
@@ -249,7 +249,7 @@ class X2Y2ApiClient(
         orderId: BigInteger,
         signMessage: String,
         sign: String
-    ): ApiListResponse<GetCancelInputResponse> {
+    ): ApiSingleResponse<GetCancelInputResponse> {
         return transport.post()
             .uri(ORDERS_GET_CANCEL_INPUT_ENDPOINT)
             .body(
