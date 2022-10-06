@@ -12,7 +12,7 @@ import scalether.domain.Address
 data class Event(
     val id: BigInteger,
     val tx: String?,
-    val type: String,
+    val type: EventType,
     val fromAddress: Address,
     val toAddress: Address?,
     val token: Token,
