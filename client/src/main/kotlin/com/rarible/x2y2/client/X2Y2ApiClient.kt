@@ -16,7 +16,6 @@ import com.rarible.x2y2.client.model.EVENTS_MAX_LIMIT
 import com.rarible.x2y2.client.model.Event
 import com.rarible.x2y2.client.model.EventType
 import com.rarible.x2y2.client.model.FetchOrderSignRequest
-import com.rarible.x2y2.client.model.FetchOrderSignResponse
 import com.rarible.x2y2.client.model.GetCancelInputRequest
 import com.rarible.x2y2.client.model.GetCancelInputResponse
 import com.rarible.x2y2.client.model.OFFERS_ENDPOINT
@@ -25,12 +24,14 @@ import com.rarible.x2y2.client.model.ORDERS_GET_CANCEL_INPUT_ENDPOINT
 import com.rarible.x2y2.client.model.ORDERS_MAX_LIMIT
 import com.rarible.x2y2.client.model.ORDERS_SIGN_ENDPOINT
 import com.rarible.x2y2.client.model.Order
+import com.rarible.x2y2.client.model.OrderSignResult
 import com.rarible.x2y2.client.model.OrdersSort
 import com.rarible.x2y2.client.model.SortDirection
 import io.netty.channel.ChannelOption
 import io.netty.channel.epoll.EpollChannelOption
 import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
+import org.springframework.http.HttpStatus
 import org.springframework.http.client.reactive.ClientHttpConnector
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.http.codec.json.Jackson2JsonDecoder
@@ -40,11 +41,13 @@ import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
+import org.springframework.web.reactive.function.client.awaitExchange
 import org.springframework.web.util.UriBuilder
 import reactor.netty.http.client.HttpClient
 import reactor.netty.resources.ConnectionProvider
 import reactor.netty.transport.ProxyProvider
 import scalether.domain.Address
+import java.io.IOException
 import java.math.BigInteger
 import java.net.URI
 import java.time.Duration
@@ -216,8 +219,7 @@ class X2Y2ApiClient(
         currency: Address,
         price: BigInteger,
         tokenId: BigInteger?
-    ): ApiListResponse<FetchOrderSignResponse> {
-
+    ): OrderSignResult {
         return transport.post()
             .uri(ORDERS_SIGN_ENDPOINT)
             .body(
@@ -236,8 +238,13 @@ class X2Y2ApiClient(
                     )
                 )
             )
-            .retrieve()
-            .awaitBody()
+            .awaitExchange {
+                when (val statusCode = it.statusCode()) {
+                    HttpStatus.OK -> OrderSignResult.success(it.awaitBody())
+                    HttpStatus.BAD_REQUEST -> OrderSignResult.fail(it.awaitBody())
+                    else -> throw IOException("Server error: http=${statusCode}, body=${it.awaitBody<String>()}")
+                }
+            }
     }
 
     /**

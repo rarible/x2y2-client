@@ -3,11 +3,13 @@ package com.rarible.x2y2.starter
 import com.rarible.x2y2.client.X2Y2ApiClient
 import com.rarible.x2y2.client.model.Event
 import com.rarible.x2y2.client.model.EventType
+import com.rarible.x2y2.client.model.OperationResult
 import com.rarible.x2y2.client.model.Order
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.fail
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringBootConfiguration
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
@@ -69,22 +71,46 @@ class X2Y2ClientIntegrationTest {
 
     @Test
     @Disabled
-    internal fun `should sign order`() = runBlocking<Unit> {
-        val orders = client.orders(
-            contract = Address.apply("0x259bF444f0bFE8Af20b6097cf8D32A85526B03a4"),
-            tokenId = BigInteger.valueOf(999)
-        )
-        assertThat(orders.data.isNotEmpty()).isTrue
-
-        val order = orders.data.first()
+    internal fun `should get sign order error`() = runBlocking<Unit> {
         val response = client.fetchOrderSign(
-            "0x0d28e9Bd340e48370475553D21Bd0A95c9a60F92",
+            "0x47921676A46CcFe3D80b161c7B4DDC8Ed9e716B6",
             BigInteger.ONE,
-            order.id,
-            order.currency,
-            order.price,
-            order.token?.tokenId
+            BigInteger("22150346"),
+            Address.apply("0x0000000000000000000000000000000000000000"),
+            BigInteger("500000000000000000"),
+            BigInteger("32292934596187112148346015918544186536963932779440027682601542850818403729412"),
         )
-        assertThat(response.data).hasSize(1)
+        when (response) {
+            is OperationResult.Fail -> {
+                assertThat(response.error.success).isFalse
+                assertThat(response.error.errors.single().code).isEqualTo(2020)
+                assertThat(response.error.errors.single().orderId).isEqualTo(BigInteger("22150346"))
+            }
+            is OperationResult.Success -> {
+                fail("Not success result")
+            }
+        }
+    }
+
+    @Test
+    @Disabled
+    internal fun `should get sign order success`() = runBlocking<Unit> {
+        val response = client.fetchOrderSign(
+            "0x47921676A46CcFe3D80b161c7B4DDC8Ed9e716B6",
+            BigInteger.ONE,
+            BigInteger("21996067"),
+            Address.apply("0x0000000000000000000000000000000000000000"),
+            BigInteger("1000000000000000000"),
+            BigInteger("4542"),
+        )
+        when (response) {
+            is OperationResult.Fail -> {
+                fail("Not success result")
+            }
+            is OperationResult.Success -> {
+                assertThat(response.result.success).isTrue
+                assertThat(response.result.data.single().orderId).isEqualTo("21996067")
+            }
+        }
     }
 }

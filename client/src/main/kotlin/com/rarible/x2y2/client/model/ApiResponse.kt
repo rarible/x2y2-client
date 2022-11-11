@@ -1,5 +1,7 @@
 package com.rarible.x2y2.client.model
 
+typealias OrderSignResult = OperationResult<ApiListResponse<FetchOrderSignResponse>, ApiOrderSignErrorResponse>
+
 sealed interface ApiResponse {
     val success: Boolean
     val next: String?
@@ -16,6 +18,13 @@ data class ApiSingleResponse<out T>(
     override val next: String?,
     val data: T
 ): ApiResponse
+
+data class ApiOrderSignErrorResponse(
+    override val success: Boolean,
+    val errors: List<OrderError>
+) : ApiResponse {
+    override val next: String? = null
+}
 
 const val ORDERS_MAX_LIMIT = 50
 const val EVENTS_MAX_LIMIT = 200
